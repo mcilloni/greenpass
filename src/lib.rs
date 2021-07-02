@@ -14,7 +14,7 @@ use thiserror::Error;
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Deserialize)]
-struct Cwt(pub Vec<Value>);
+struct Cwt(Vec<Value>);
 
 impl fmt::Display for Cwt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -34,7 +34,7 @@ impl fmt::Display for Cwt {
 }
 
 #[derive(Deserialize)]
-struct RawCert(pub BTreeMap<isize, Value>);
+struct RawCert(BTreeMap<isize, Value>);
 
 impl fmt::Display for RawCert {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -48,6 +48,7 @@ impl fmt::Display for RawCert {
     }
 }
 
+/// Error type that represents every possible error condition encountered while loading a certificate
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid base45 in input")]
@@ -139,15 +140,29 @@ pub enum CertInfo {
     Vaccine(Vaccine),
 }
 
+/// Structure that represents a Green Pass entry.
 #[derive(Debug)]
 pub struct GreenPass {
-    date_of_birth: String,  // dob can have weird formats
-    surname: String,        // nam/fn
-    givenname: String,      // nam/gn
-    std_surname: String,    // nam/fnt
-    std_givenname: String,  // nam/gnt
-    ver: String,            // ver
-    entries: Vec<CertInfo>, // [v | t | r]
+    /// Date of birth
+    pub date_of_birth: String,  // dob can have weird formats
+
+    /// Family name
+    pub surname: String,        // nam/fn
+
+    /// First name 
+    pub givenname: String,      // nam/gn
+
+    /// Family name in standardized form (see docs)
+    pub std_surname: String,    // nam/fnt
+
+    /// First name in standardized form
+    pub std_givenname: String,  // nam/gnt
+
+    /// Document version
+    pub ver: String,            // ver
+
+    /// Attestation of immunity from an illness due to vaccination, recovery or a negative test
+    pub entries: Vec<CertInfo>, // [v | t | r]
 }
 
 impl TryFrom<BTreeMap<String, Value>> for GreenPass {
@@ -208,23 +223,45 @@ impl TryFrom<BTreeMap<String, Value>> for GreenPass {
     }
 }
 
+/// Represents the whole certificate blob (excluding metadata and signature, which are unsupported at the moment)
 #[derive(Debug)]
 pub struct HealthCert {
-    some_issuer: Option<String>,
-    created: DateTime<Utc>,
-    expires: DateTime<Utc>,
-    passes: Vec<GreenPass>,
+    // Member country that issued the bundle (might be missing)
+    pub some_issuer: Option<String>,
+
+    /// Bundle creation timestamp
+    pub created: DateTime<Utc>,
+
+    /// Bundle expiration timestamp
+    pub expires: DateTime<Utc>,
+    
+    /// List of passes contained in this bundle
+    pub passes: Vec<GreenPass>,
 }
 
+/// Attests the full recovery from a given disease
 #[derive(Debug)]
 pub struct Recovery {
-    cert_id: String,        // ci
-    country: String,        // co
-    diagnosed: NaiveDate,   // fr
-    disease: String,        // tg
-    issuer: String,         // is
-    valid_from: NaiveDate,  // df
-    valid_until: NaiveDate, // du
+    /// Certificate ID
+    pub cert_id: String,        // ci
+
+    /// Member State where the test was performed
+    pub country: String,        // co
+
+    /// Date of diagnosis
+    pub diagnosed: NaiveDate,   // fr
+
+    /// String that identifies the contracted disease 
+    pub disease: String,        // tg
+
+    /// Issuing entity
+    pub issuer: String,         // is
+
+    /// Recovery attestation validity start date
+    pub valid_from: NaiveDate,  // df
+
+    /// Recovery attestation validity expire date
+    pub valid_until: NaiveDate, // du
 }
 
 impl TryFrom<BTreeMap<String, Value>> for Recovery {
@@ -255,23 +292,45 @@ impl TryFrom<BTreeMap<String, Value>> for Recovery {
     }
 }
 
+/// Identifies the recognized test types
 #[derive(Debug)]
 pub enum TestName {
+    /// A Nucleic Acid Amplification Test, with the name of the specific test
     NAAT { name: String },     // nm
+
+    /// A Rapid Antigen Test, with a string identifying the device from the JRC database
     RAT { device_id: String }, // ma
 }
 
+/// Attests that a test for a given disease has been conducted.
 #[derive(Debug)]
 pub struct Test {
-    cert_id: String,                   // ci
-    collect_ts: DateTime<FixedOffset>, // sc
-    country: String,                   // co
-    disease: String,                   // tg
-    issuer: String,                    // is
-    name: TestName,                    // nm | ma
-    result: String,                    // tr
-    test_type: String,                 // tt
-    testing_centre: String,            // tc
+    /// Certificate ID
+    pub cert_id: String,                   // ci
+
+    /// Date and time when samples where collected
+    pub collect_ts: DateTime<FixedOffset>, // sc
+
+    /// Member State where the test was performed
+    pub country: String,                   // co
+
+    /// Target disease
+    pub disease: String,                   // tg
+
+    /// Issuing entity
+    pub issuer: String,                    // is
+
+    /// Name and identifier of the used testing technology
+    pub name: TestName,                    // nm | ma
+
+    /// Test result, as defined in  SNOMED CT GPS
+    pub result: String,                    // tr
+
+    /// Coded string value identifying the testing method
+    pub test_type: String,                 // tt
+
+    /// Name of the centre that conducted the test
+    pub testing_centre: String,            // tc
 }
 
 impl TryFrom<BTreeMap<String, Value>> for Test {
@@ -314,18 +373,38 @@ impl TryFrom<BTreeMap<String, Value>> for Test {
     }
 }
 
+/// Attests that an individual has been vaccinated for a given disease.
 #[derive(Debug)]
 pub struct Vaccine {
-    cert_id: String,          // ci
-    country: String,          // co
-    date: NaiveDate,          // dt
-    disease: String,          // tg
-    dose_total: usize,        // sd
-    dose_number: usize,       // dn
-    issuer: String,           // is
-    market_auth: String,      // ma
-    product: String,          // mp
-    prophilaxis_kind: String, // vp
+    /// Certificate ID
+    pub cert_id: String,          // ci
+
+    /// Vaccination country
+    pub country: String,          // co
+
+    /// Vaccination date
+    pub date: NaiveDate,          // dt
+
+    /// Targeted disease
+    pub disease: String,          // tg
+
+    /// Total number of doses required by the administered vaccine 
+    pub dose_total: usize,        // sd
+
+    /// Number of administered doses
+    pub dose_number: usize,       // dn
+
+    /// Issuing entity
+    pub issuer: String,           // is
+
+    /// EUDCC Gateway market authorization identifier
+    pub market_auth: String,      // ma
+
+    /// Product identifier as defined in EUDCC Gateway
+    pub product: String,          // mp
+
+    /// Type of vaccine or prophylaxis used as defined in EUDCC Gateway
+    pub prophylaxis_kind: String, // vp
 }
 
 impl TryFrom<BTreeMap<String, Value>> for Vaccine {
@@ -341,7 +420,7 @@ impl TryFrom<BTreeMap<String, Value>> for Vaccine {
         let issuer = extract_string(&mut values, "is")?;
         let market_auth = extract_string(&mut values, "ma")?;
         let product = extract_string(&mut values, "mp")?;
-        let prophilaxis_kind = extract_string(&mut values, "vp")?;
+        let prophylaxis_kind = extract_string(&mut values, "vp")?;
 
         let gp = Vaccine {
             cert_id,
@@ -353,7 +432,7 @@ impl TryFrom<BTreeMap<String, Value>> for Vaccine {
             issuer,
             market_auth,
             product,
-            prophilaxis_kind,
+            prophylaxis_kind,
         };
 
         map_empty!(values);
@@ -473,6 +552,22 @@ impl TryFrom<&str> for HealthCert {
     }
 }
 
+/// Parses a Base45 CBOR Web Token containing a EU Health Certificate. No signature validation is currently performed by
+/// this crate.
+/// ```
+/// use std::{error::Error, fs::read_to_string};
+/// 
+/// fn main() -> Result<(), Box<dyn Error>> {
+///     // Read a Base45 payload extracted from a QR code
+///     let buf_str = read_to_string("base45_file.txt")?;
+///
+///     let health_cert = greenpass::parse(&buf_str)?;
+///
+///     println!("{:#?}", health_cert);
+///     
+///     Ok(())
+/// }
+/// ```
 pub fn parse(data: &str) -> Result<HealthCert> {
     HealthCert::try_from(data)
 }
