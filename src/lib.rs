@@ -132,22 +132,22 @@ pub enum CertInfo {
 #[derive(Debug)]
 pub struct GreenPass {
     /// Date of birth
-    pub date_of_birth: String,  // dob can have weird formats
+    pub date_of_birth: String, // dob can have weird formats
 
     /// Family name
-    pub surname: String,        // nam/fn
+    pub surname: String, // nam/fn
 
-    /// First name 
-    pub givenname: String,      // nam/gn
+    /// First name
+    pub givenname: String, // nam/gn
 
     /// Family name in standardized form (see docs)
-    pub std_surname: String,    // nam/fnt
+    pub std_surname: String, // nam/fnt
 
     /// First name in standardized form
-    pub std_givenname: String,  // nam/gnt
+    pub std_givenname: String, // nam/gnt
 
     /// Document version
-    pub ver: String,            // ver
+    pub ver: String, // ver
 
     /// Attestation of immunity from an illness due to vaccination, recovery or a negative test
     pub entries: Vec<CertInfo>, // [v | t | r]
@@ -222,7 +222,7 @@ pub struct HealthCert {
 
     /// Bundle expiration timestamp
     pub expires: DateTime<Utc>,
-    
+
     /// List of passes contained in this bundle
     pub passes: Vec<GreenPass>,
 }
@@ -231,22 +231,22 @@ pub struct HealthCert {
 #[derive(Debug)]
 pub struct Recovery {
     /// Certificate ID
-    pub cert_id: String,        // ci
+    pub cert_id: String, // ci
 
     /// Member State where the test was performed
-    pub country: String,        // co
+    pub country: String, // co
 
     /// Date of diagnosis
-    pub diagnosed: NaiveDate,   // fr
+    pub diagnosed: NaiveDate, // fr
 
-    /// String that identifies the contracted disease 
-    pub disease: String,        // tg
+    /// String that identifies the contracted disease
+    pub disease: String, // tg
 
     /// Issuing entity
-    pub issuer: String,         // is
+    pub issuer: String, // is
 
     /// Recovery attestation validity start date
-    pub valid_from: NaiveDate,  // df
+    pub valid_from: NaiveDate, // df
 
     /// Recovery attestation validity expire date
     pub valid_until: NaiveDate, // du
@@ -284,7 +284,7 @@ impl TryFrom<BTreeMap<String, Value>> for Recovery {
 #[derive(Debug)]
 pub enum TestName {
     /// A Nucleic Acid Amplification Test, with the name of the specific test
-    NAAT { name: String },     // nm
+    NAAT { name: String }, // nm
 
     /// A Rapid Antigen Test, with a string identifying the device from the JRC database
     RAT { device_id: String }, // ma
@@ -294,31 +294,31 @@ pub enum TestName {
 #[derive(Debug)]
 pub struct Test {
     /// Certificate ID
-    pub cert_id: String,                   // ci
+    pub cert_id: String, // ci
 
     /// Date and time when samples where collected
     pub collect_ts: DateTime<FixedOffset>, // sc
 
     /// Member State where the test was performed
-    pub country: String,                   // co
+    pub country: String, // co
 
     /// Target disease
-    pub disease: String,                   // tg
+    pub disease: String, // tg
 
     /// Issuing entity
-    pub issuer: String,                    // is
+    pub issuer: String, // is
 
     /// Name and identifier of the used testing technology
-    pub name: TestName,                    // nm | ma
+    pub name: TestName, // nm | ma
 
     /// Test result, as defined in  SNOMED CT GPS
-    pub result: String,                    // tr
+    pub result: String, // tr
 
     /// Coded string value identifying the testing method
-    pub test_type: String,                 // tt
+    pub test_type: String, // tt
 
     /// Name of the centre that conducted the test
-    pub testing_centre: String,            // tc
+    pub testing_centre: String, // tc
 }
 
 impl TryFrom<BTreeMap<String, Value>> for Test {
@@ -365,31 +365,31 @@ impl TryFrom<BTreeMap<String, Value>> for Test {
 #[derive(Debug)]
 pub struct Vaccine {
     /// Certificate ID
-    pub cert_id: String,          // ci
+    pub cert_id: String, // ci
 
     /// Vaccination country
-    pub country: String,          // co
+    pub country: String, // co
 
     /// Vaccination date
-    pub date: NaiveDate,          // dt
+    pub date: NaiveDate, // dt
 
     /// Targeted disease
-    pub disease: String,          // tg
-    
-    /// Number of administered doses
-    pub dose_number: usize,       // dn
+    pub disease: String, // tg
 
-    /// Total number of doses required by the administered vaccine 
-    pub dose_total: usize,        // sd
+    /// Number of administered doses
+    pub dose_number: usize, // dn
+
+    /// Total number of doses required by the administered vaccine
+    pub dose_total: usize, // sd
 
     /// Issuing entity
-    pub issuer: String,           // is
+    pub issuer: String, // is
 
     /// EUDCC Gateway market authorization identifier
-    pub market_auth: String,      // ma
+    pub market_auth: String, // ma
 
     /// Product identifier as defined in EUDCC Gateway
-    pub product: String,          // mp
+    pub product: String, // mp
 
     /// Type of vaccine or prophylaxis used as defined in EUDCC Gateway
     pub prophylaxis_kind: String, // vp
@@ -544,7 +544,7 @@ impl TryFrom<&str> for HealthCert {
 /// this crate.
 /// ```
 /// use std::{error::Error, fs::read_to_string};
-/// 
+///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///     // Read a Base45 payload extracted from a QR code
 ///     let buf_str = read_to_string("base45_file.txt")?;
