@@ -36,18 +36,6 @@ impl fmt::Display for Cwt {
 #[derive(Deserialize)]
 struct RawCert(BTreeMap<isize, Value>);
 
-impl fmt::Display for RawCert {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Cert {{\n")?;
-
-        for (k, v) in &self.0 {
-            write!(f, "  {}: {:?}\n", k, v)?;
-        }
-
-        write!(f, "}}")
-    }
-}
-
 /// Error type that represents every possible error condition encountered while loading a certificate
 #[derive(Debug, Error)]
 pub enum Error {
@@ -387,12 +375,12 @@ pub struct Vaccine {
 
     /// Targeted disease
     pub disease: String,          // tg
+    
+    /// Number of administered doses
+    pub dose_number: usize,       // dn
 
     /// Total number of doses required by the administered vaccine 
     pub dose_total: usize,        // sd
-
-    /// Number of administered doses
-    pub dose_number: usize,       // dn
 
     /// Issuing entity
     pub issuer: String,           // is

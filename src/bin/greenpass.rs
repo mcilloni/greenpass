@@ -32,12 +32,12 @@ fn main_do() -> std::result::Result<(), anyhow::Error> {
         read(file)?
     };
 
-    if buf.len() > 0 {
+    if !buf.is_empty() {
         let buf_str = String::from_utf8(buf)?;
 
         println!("{:#?}", greenpass::parse(&buf_str)?);
     }
-    
+
     Ok(())
 }
 
