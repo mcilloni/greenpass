@@ -2,36 +2,16 @@ use std::{
     collections::BTreeMap,
     convert::TryFrom,
     fmt,
-    fs::read,
-    io::{self, prelude::*, stdin},
-    process::exit,
+    io::{self, Read},
 };
 
 use chrono::prelude::*;
-use clap::{AppSettings, Clap};
 use flate2::read::ZlibDecoder;
 use serde_cbor::Value;
 use serde_derive::Deserialize;
 use thiserror::Error;
 
 type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Clap)]
-#[clap(version = "0.0.1")]
-#[clap(setting = AppSettings::ColoredHelp)]
-struct Opts {
-    /// File to process. Omit or specify `-` to read from stdin
-    #[clap(default_value = "-")]
-    file: String,
-}
-
-fn read_stdin() -> Result<Vec<u8>> {
-    let mut buf = Vec::new();
-
-    stdin().read_to_end(&mut buf)?;
-
-    Ok(buf)
-}
 
 #[derive(Deserialize)]
 struct Cwt(pub Vec<Value>);
@@ -69,7 +49,7 @@ impl fmt::Display for RawCert {
 }
 
 #[derive(Debug, Error)]
-enum Error {
+pub enum Error {
     #[error("invalid base45 in input")]
     InvalidBase45(#[from] base45::DecodeError),
 
@@ -109,7 +89,7 @@ macro_rules! map_empty {
         if !$m.is_empty() {
             return Err(Error::SpuriousData($m));
         }
-    }
+    };
 }
 
 // does not work for Tag, which is not needed
@@ -146,8 +126,6 @@ fn extract_key(m: &mut BTreeMap<String, Value>, k: &str) -> Result<Value> {
     m.remove(k).ok_or_else(|| Error::MissingKey(k.into()))
 }
 
-gen_extract!(extract_map, Value::Map, BTreeMap<Value, Value>);
-
 gen_extract!(extract_string, Value::Text, String);
 
 fn extract_string_map(m: &mut BTreeMap<String, Value>, k: &str) -> Result<BTreeMap<String, Value>> {
@@ -155,14 +133,14 @@ fn extract_string_map(m: &mut BTreeMap<String, Value>, k: &str) -> Result<BTreeM
 }
 
 #[derive(Debug)]
-enum CertInfo {
+pub enum CertInfo {
     Recovery(Recovery),
     Test(Test),
     Vaccine(Vaccine),
 }
 
 #[derive(Debug)]
-struct GreenPass {
+pub struct GreenPass {
     date_of_birth: String,  // dob can have weird formats
     surname: String,        // nam/fn
     givenname: String,      // nam/gn
@@ -231,7 +209,7 @@ impl TryFrom<BTreeMap<String, Value>> for GreenPass {
 }
 
 #[derive(Debug)]
-struct HealthCert {
+pub struct HealthCert {
     some_issuer: Option<String>,
     created: DateTime<Utc>,
     expires: DateTime<Utc>,
@@ -239,7 +217,7 @@ struct HealthCert {
 }
 
 #[derive(Debug)]
-struct Recovery {
+pub struct Recovery {
     cert_id: String,        // ci
     country: String,        // co
     diagnosed: NaiveDate,   // fr
@@ -278,13 +256,13 @@ impl TryFrom<BTreeMap<String, Value>> for Recovery {
 }
 
 #[derive(Debug)]
-enum TestName {
+pub enum TestName {
     NAAT { name: String },     // nm
     RAT { device_id: String }, // ma
 }
 
 #[derive(Debug)]
-struct Test {
+pub struct Test {
     cert_id: String,                   // ci
     collect_ts: DateTime<FixedOffset>, // sc
     country: String,                   // co
@@ -337,7 +315,7 @@ impl TryFrom<BTreeMap<String, Value>> for Test {
 }
 
 #[derive(Debug)]
-struct Vaccine {
+pub struct Vaccine {
     cert_id: String,          // ci
     country: String,          // co
     date: NaiveDate,          // dt
@@ -397,119 +375,104 @@ fn to_strmap(desc: &str, v: Value) -> Result<BTreeMap<String, Value>> {
     }
 }
 
-fn process_cert(data: String) -> Result<HealthCert> {
-    const HCID: &str = "HC1:";
+impl TryFrom<&str> for HealthCert {
+    type Error = Error;
 
-    if !data.starts_with(HCID) {
-        return Err(Error::MissingHCID);
-    }
+    fn try_from(data: &str) -> std::result::Result<Self, Self::Error> {
+        const HCID: &str = "HC1:";
 
-    let defl = base45::decode(data[HCID.len()..].trim())?;
-
-    let mut dec = ZlibDecoder::new(&defl as &[u8]);
-
-    let mut data = Vec::new();
-    dec.read_to_end(&mut data)?;
-
-    let Cwt(cwt_arr) = serde_cbor::from_slice(&data)?;
-
-    if cwt_arr.len() != 4 {
-        return Err(Error::MalformedCWT);
-    }
-
-    let RawCert(mut cert_map) = match &cwt_arr[2] {
-        Value::Bytes(bys) => serde_cbor::from_slice(bys)?,
-        _ => {
-            return Err(Error::InvalidFormatFor {
-                key: "root cert".into(),
-            })
+        if !data.starts_with(HCID) {
+            return Err(Error::MissingHCID);
         }
-    };
 
-    let some_issuer = if let Some(iss_v) = cert_map.remove(&1) {
-        match iss_v {
-            Value::Text(iss) => Some(iss),
+        let defl = base45::decode(data[HCID.len()..].trim())?;
+
+        let mut dec = ZlibDecoder::new(&defl as &[u8]);
+
+        let mut data = Vec::new();
+        dec.read_to_end(&mut data)?;
+
+        let Cwt(cwt_arr) = serde_cbor::from_slice(&data)?;
+
+        if cwt_arr.len() != 4 {
+            return Err(Error::MalformedCWT);
+        }
+
+        let RawCert(mut cert_map) = match &cwt_arr[2] {
+            Value::Bytes(bys) => serde_cbor::from_slice(bys)?,
             _ => {
                 return Err(Error::InvalidFormatFor {
-                    key: "issuing country".into(),
+                    key: "root cert".into(),
                 })
             }
-        }
-    } else {
-        None
-    };
+        };
 
-    let expires = match cert_map
-        .remove(&4)
-        .ok_or_else(|| Error::MissingKey("expiration timestamp".into()))?
-    {
-        Value::Integer(ts) => Utc.timestamp(ts as i64, 0),
-        _ => {
-            return Err(Error::InvalidFormatFor {
-                key: "expiration timestamp".into(),
-            })
-        }
-    };
+        let some_issuer = if let Some(iss_v) = cert_map.remove(&1) {
+            match iss_v {
+                Value::Text(iss) => Some(iss),
+                _ => {
+                    return Err(Error::InvalidFormatFor {
+                        key: "issuing country".into(),
+                    })
+                }
+            }
+        } else {
+            None
+        };
 
-    let created = match cert_map
-        .remove(&6)
-        .ok_or_else(|| Error::MissingKey("issue timestamp".into()))?
-    {
-        Value::Integer(ts) => Utc.timestamp(ts as i64, 0),
-        _ => {
-            return Err(Error::InvalidFormatFor {
-                key: "issue timestamp".into(),
-            })
-        }
-    };
+        let expires = match cert_map
+            .remove(&4)
+            .ok_or_else(|| Error::MissingKey("expiration timestamp".into()))?
+        {
+            Value::Integer(ts) => Utc.timestamp(ts as i64, 0),
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "expiration timestamp".into(),
+                })
+            }
+        };
 
-    let hcerts = match cert_map
-        .remove(&-260)
-        .ok_or_else(|| Error::MissingKey("hcert".into()))?
-    {
-        Value::Map(hcmap) => hcmap
+        let created = match cert_map
+            .remove(&6)
+            .ok_or_else(|| Error::MissingKey("issue timestamp".into()))?
+        {
+            Value::Integer(ts) => Utc.timestamp(ts as i64, 0),
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "issue timestamp".into(),
+                })
+            }
+        };
+
+        let hcerts = match cert_map
+            .remove(&-260)
+            .ok_or_else(|| Error::MissingKey("hcert".into()))?
+        {
+            Value::Map(hcmap) => hcmap
+                .into_iter()
+                .map(|(_, v)| to_strmap("hcert", v))
+                .collect::<Result<Vec<_>>>()?,
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "hcert".into(),
+                })
+            }
+        };
+
+        let passes = hcerts
             .into_iter()
-            .map(|(_, v)| to_strmap("hcert", v))
-            .collect::<Result<Vec<_>>>()?,
-        _ => {
-            return Err(Error::InvalidFormatFor {
-                key: "hcert".into(),
-            })
-        }
-    };
+            .map(GreenPass::try_from)
+            .collect::<Result<Vec<_>>>()?;
 
-    let passes = hcerts
-        .into_iter()
-        .map(GreenPass::try_from)
-        .collect::<Result<Vec<_>>>()?;
-
-    Ok(HealthCert {
-        some_issuer,
-        created,
-        expires,
-        passes,
-    })
-}
-
-fn main_do() -> std::result::Result<(), anyhow::Error> {
-    let Opts { file } = Opts::parse();
-
-    let buf = if file == "-" {
-        read_stdin()?
-    } else {
-        read(file)?
-    };
-
-    let buf_str = String::from_utf8(buf)?;
-
-    println!("{:#?}", process_cert(buf_str)?);
-
-    Ok(())
-}
-
-fn main() {
-    if let Err(e) = main_do() {
-        eprintln!("error: {}", e);
-        exit(-1);
+        Ok(HealthCert {
+            some_issuer,
+            created,
+            expires,
+            passes,
+        })
     }
+}
+
+pub fn parse(data: &str) -> Result<HealthCert> {
+    HealthCert::try_from(data)
 }
