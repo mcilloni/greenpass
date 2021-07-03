@@ -71,7 +71,7 @@ fn dump_recovery(r: &Recovery) {
         valid_until,
     } = r;
 
-    pad4!("Recovery attestation\n");
+    pad4!("Recovery attestation:");
     pad8!("Cert ID: {}", cert_id);
     pad8!("Disease: {}", disease);
     pad8!("Issuer: {}", issuer);
@@ -94,7 +94,7 @@ fn dump_test(t: &Test) {
         testing_centre,
     } = t;
 
-    pad4!("Testing attestation\n");
+    pad4!("Testing attestation:");
     pad8!("Cert ID: {}", cert_id);
     pad8!("Disease: {}", disease);
     pad8!("Result code: {}", result);
@@ -125,7 +125,7 @@ fn dump_vaccination(v: &Vaccine) {
         prophylaxis_kind,
     } = v;
 
-    pad4!("Vaccination data\n");
+    pad4!("Vaccination data:");
 
     pad8!("Cert ID: {}", cert_id);
     pad8!("Disease: {}", disease);

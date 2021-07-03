@@ -121,7 +121,7 @@ fn extract_string_map(m: &mut BTreeMap<String, Value>, k: &str) -> Result<BTreeM
     to_strmap(k, extract_key(m, k)?)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum CertInfo {
     Recovery(Recovery),
     Test(Test),
@@ -129,7 +129,7 @@ pub enum CertInfo {
 }
 
 /// Structure that represents a Green Pass entry.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct GreenPass {
     /// Date of birth
     pub date_of_birth: String, // dob can have weird formats
@@ -212,7 +212,7 @@ impl TryFrom<BTreeMap<String, Value>> for GreenPass {
 }
 
 /// Represents the whole certificate blob (excluding metadata and signature, which are unsupported at the moment)
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct HealthCert {
     // Member country that issued the bundle (might be missing)
     pub some_issuer: Option<String>,
@@ -228,7 +228,7 @@ pub struct HealthCert {
 }
 
 /// Attests the full recovery from a given disease
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Recovery {
     /// Certificate ID
     pub cert_id: String, // ci
@@ -281,7 +281,7 @@ impl TryFrom<BTreeMap<String, Value>> for Recovery {
 }
 
 /// Identifies the recognized test types
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TestName {
     /// A Nucleic Acid Amplification Test, with the name of the specific test
     NAAT { name: String }, // nm
@@ -291,7 +291,7 @@ pub enum TestName {
 }
 
 /// Attests that a test for a given disease has been conducted.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Test {
     /// Certificate ID
     pub cert_id: String, // ci
@@ -362,7 +362,7 @@ impl TryFrom<BTreeMap<String, Value>> for Test {
 }
 
 /// Attests that an individual has been vaccinated for a given disease.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Vaccine {
     /// Certificate ID
     pub cert_id: String, // ci
@@ -542,7 +542,8 @@ impl TryFrom<&str> for HealthCert {
 
 /// Parses a Base45 CBOR Web Token containing a EU Health Certificate. No signature validation is currently performed by
 /// this crate.
-/// ```
+///
+/// ```no_run
 /// use std::{error::Error, fs::read_to_string};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
