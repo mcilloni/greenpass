@@ -1,6 +1,9 @@
 [package]
 name = "greenpass"
 version = "0.1.0"
+description = "Rust crate to parse EU Digital Green Certificates for COVID-19"
+repository = "https://github.com/mcilloni/greenpass"
+license = "MPL-2.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
