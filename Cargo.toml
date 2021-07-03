@@ -1,5 +1,6 @@
 [package]
 name = "greenpass"
+author = ["Marco Cilloni <m.c.cilloni@gmail.com>"]
 version = "0.1.0"
 description = "Rust crate to parse EU Digital Green Certificates for COVID-19"
 repository = "https://github.com/mcilloni/greenpass"
