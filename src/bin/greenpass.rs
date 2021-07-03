@@ -9,9 +9,11 @@ use std::{
 use clap::{AppSettings, Clap};
 use greenpass::{CertInfo, GreenPass, HealthCert, Recovery, Test, TestName, Vaccine};
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 /// Utility to quickly inspect EU Digital Green Certificates. Does not support validation yet.
 #[derive(Clap)]
-#[clap(version = "0.0.1")]
+#[clap(version = VERSION)]
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
     /// File containing a Base45 QR code payload.
