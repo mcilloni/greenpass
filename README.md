@@ -72,3 +72,16 @@ let hc_parsed = greenpass::parse(&buf_str)?;
 
 assert_eq!(hc_parsed, vac_hc);
 ```
+
+## Fuzzing
+
+To run the fuzzer, cargo-fuzz is required
+
+`cargo install cargo-fuzz`
+
+Then to do a basic fuzzing campaign
+
+`cargo +nightly fuzz run greenpass_parse`
+
+There are more options for cargo-fuzz in their documentation.
+
