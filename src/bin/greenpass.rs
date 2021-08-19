@@ -2,7 +2,6 @@ use std::{
     cell::RefCell,
     fs::read,
     io::{self, prelude::*, stdin},
-    iter::repeat,
     process::exit,
 };
 
@@ -37,7 +36,7 @@ thread_local! {
 fn pad(n: usize) {
     WS.with(|wsbuf| {
         if wsbuf.borrow().len() != n {
-            *wsbuf.borrow_mut() = repeat(" ").take(n).collect();
+            *wsbuf.borrow_mut() = " ".repeat(n);
         }
 
         print!("{}", wsbuf.borrow());
