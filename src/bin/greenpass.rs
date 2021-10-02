@@ -171,6 +171,7 @@ fn dump_hc(hc: &HealthCert) {
         expires,
         passes,
         some_issuer,
+        signature,
     } = hc;
 
     println!("EU Digital COVID Certificate\n");
@@ -180,7 +181,17 @@ fn dump_hc(hc: &HealthCert) {
     }
 
     println!("Created at: {}", created);
-    println!("Expires at: {}\n", expires);
+    println!("Expires at: {}", expires);
+    println!();
+
+    println!("Signature algorithm: {}", signature.algorithm);
+    println!("Signature KID: {}", hex::encode(&signature.kid));
+    println!(
+        "Signature data: ({} bytes) {}",
+        signature.signature.len(),
+        hex::encode(&signature.signature)
+    );
+    println!();
 
     for (i, pass) in passes.iter().enumerate() {
         println!("Pass#{}:", i);
