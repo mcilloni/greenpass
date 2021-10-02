@@ -36,6 +36,9 @@ impl fmt::Display for Cwt {
 #[derive(Deserialize)]
 struct RawCert(BTreeMap<isize, Value>);
 
+#[derive(Deserialize)]
+struct RawHeader(BTreeMap<isize, Value>);
+
 /// Error type that represents every possible error condition encountered while loading a certificate
 #[derive(Debug, Error)]
 pub enum Error {
@@ -211,6 +214,19 @@ impl TryFrom<BTreeMap<String, Value>> for GreenPass {
     }
 }
 
+/// Represents the signature and signature metadata for a [HealthCert].
+#[derive(Debug, PartialEq)]
+pub struct Signature {
+    /// Key id
+    pub kid: Vec<u8>,
+
+    /// Algorithm used for signing
+    pub algorithm: i128,
+
+    /// Raw signature
+    pub signature: Vec<u8>,
+}
+
 /// Represents the whole certificate blob
 #[derive(Debug, PartialEq)]
 pub struct HealthCert {
@@ -227,7 +243,7 @@ pub struct HealthCert {
     pub passes: Vec<GreenPass>,
 
     /// Raw signature
-    pub signature: Vec<u8>,
+    pub signature: Signature,
 }
 
 /// Attests the full recovery from a given disease
@@ -534,17 +550,14 @@ impl TryFrom<&str> for HealthCert {
             .map(GreenPass::try_from)
             .collect::<Result<Vec<_>>>()?;
 
-        let _protected_properties = match &cwt_arr[0] {
-            Value::Bytes(_bys) => {
-                // TODO: This is a bstr, should be checked as per https://cose-wg.github.io/cose-spec/#rfc.section.2
-            }
+        let protected_properties: RawHeader = match &cwt_arr[0] {
+            Value::Bytes(_bys) => serde_cbor::from_slice(&_bys)?,
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "protected properties".into(),
                 })
             }
         };
-        // TODO: add assertions/errors for protected_properties
 
         let _unprotected_properties = match &cwt_arr[1] {
             Value::Map(map) => {
@@ -568,6 +581,32 @@ impl TryFrom<&str> for HealthCert {
                     key: "signature".into(),
                 })
             }
+        };
+
+        let mut protected_properties = protected_properties.0;
+        let kid = match protected_properties
+            .remove(&4)
+            .ok_or_else(|| Error::MissingKey("KID".into()))?
+        {
+            Value::Bytes(bys) => bys,
+            _ => return Err(Error::InvalidFormatFor { key: "KID".into() }),
+        };
+        let algorithm = match protected_properties
+            .remove(&1)
+            .ok_or_else(|| Error::MissingKey("algorithm".into()))?
+        {
+            Value::Integer(i) => i,
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "algorithm".into(),
+                })
+            }
+        };
+
+        let signature = Signature {
+            kid,
+            algorithm,
+            signature,
         };
 
         Ok(HealthCert {
