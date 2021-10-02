@@ -211,7 +211,7 @@ impl TryFrom<BTreeMap<String, Value>> for GreenPass {
     }
 }
 
-/// Represents the whole certificate blob (excluding metadata and signature, which are unsupported at the moment)
+/// Represents the whole certificate blob
 #[derive(Debug, PartialEq)]
 pub struct HealthCert {
     // Member country that issued the bundle (might be missing)
@@ -225,6 +225,9 @@ pub struct HealthCert {
 
     /// List of passes contained in this bundle
     pub passes: Vec<GreenPass>,
+
+    /// Raw signature
+    pub signature: Vec<u8>,
 }
 
 /// Attests the full recovery from a given disease
@@ -531,11 +534,48 @@ impl TryFrom<&str> for HealthCert {
             .map(GreenPass::try_from)
             .collect::<Result<Vec<_>>>()?;
 
+        let _protected_properties = match &cwt_arr[0] {
+            Value::Bytes(_bys) => {
+                // TODO: This is a bstr, should be checked as per https://cose-wg.github.io/cose-spec/#rfc.section.2
+            }
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "protected properties".into(),
+                })
+            }
+        };
+        // TODO: add assertions/errors for protected_properties
+
+        let _unprotected_properties = match &cwt_arr[1] {
+            Value::Map(map) => {
+                if !map.is_empty() {
+                    return Err(Error::InvalidFormatFor {
+                        key: "unprotected properties".into(),
+                    });
+                }
+            }
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "unprotected properties".into(),
+                })
+            }
+        };
+
+        let signature = match &cwt_arr[3] {
+            Value::Bytes(bys) => bys.clone(),
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "signature".into(),
+                })
+            }
+        };
+
         Ok(HealthCert {
             some_issuer,
             created,
             expires,
             passes,
+            signature,
         })
     }
 }
