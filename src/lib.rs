@@ -36,6 +36,9 @@ impl fmt::Display for Cwt {
 #[derive(Deserialize)]
 struct RawCert(BTreeMap<isize, Value>);
 
+#[derive(Deserialize)]
+struct RawHeader(BTreeMap<isize, Value>);
+
 /// Error type that represents every possible error condition encountered while loading a certificate
 #[derive(Debug, Error)]
 pub enum Error {
@@ -211,7 +214,20 @@ impl TryFrom<BTreeMap<String, Value>> for GreenPass {
     }
 }
 
-/// Represents the whole certificate blob (excluding metadata and signature, which are unsupported at the moment)
+/// Represents the signature and signature metadata for a [HealthCert].
+#[derive(Debug, PartialEq)]
+pub struct Signature {
+    /// Key id
+    pub kid: Vec<u8>,
+
+    /// Algorithm used for signing
+    pub algorithm: i128,
+
+    /// Raw signature
+    pub signature: Vec<u8>,
+}
+
+/// Represents the whole certificate blob
 #[derive(Debug, PartialEq)]
 pub struct HealthCert {
     // Member country that issued the bundle (might be missing)
@@ -225,6 +241,9 @@ pub struct HealthCert {
 
     /// List of passes contained in this bundle
     pub passes: Vec<GreenPass>,
+
+    /// Raw signature
+    pub signature: Signature,
 }
 
 /// Attests the full recovery from a given disease
@@ -531,11 +550,71 @@ impl TryFrom<&str> for HealthCert {
             .map(GreenPass::try_from)
             .collect::<Result<Vec<_>>>()?;
 
+        let protected_properties: RawHeader = match &cwt_arr[0] {
+            Value::Bytes(_bys) => serde_cbor::from_slice(&_bys)?,
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "protected properties".into(),
+                })
+            }
+        };
+
+        let _unprotected_properties = match &cwt_arr[1] {
+            Value::Map(map) => {
+                if !map.is_empty() {
+                    return Err(Error::InvalidFormatFor {
+                        key: "unprotected properties".into(),
+                    });
+                }
+            }
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "unprotected properties".into(),
+                })
+            }
+        };
+
+        let signature = match &cwt_arr[3] {
+            Value::Bytes(bys) => bys.clone(),
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "signature".into(),
+                })
+            }
+        };
+
+        let mut protected_properties = protected_properties.0;
+        let kid = match protected_properties
+            .remove(&4)
+            .ok_or_else(|| Error::MissingKey("KID".into()))?
+        {
+            Value::Bytes(bys) => bys,
+            _ => return Err(Error::InvalidFormatFor { key: "KID".into() }),
+        };
+        let algorithm = match protected_properties
+            .remove(&1)
+            .ok_or_else(|| Error::MissingKey("algorithm".into()))?
+        {
+            Value::Integer(i) => i,
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "algorithm".into(),
+                })
+            }
+        };
+
+        let signature = Signature {
+            kid,
+            algorithm,
+            signature,
+        };
+
         Ok(HealthCert {
             some_issuer,
             created,
             expires,
             passes,
+            signature,
         })
     }
 }
