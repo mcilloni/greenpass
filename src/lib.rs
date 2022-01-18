@@ -478,11 +478,37 @@ impl TryFrom<&str> for HealthCert {
         let mut data = Vec::new();
         dec.read_to_end(&mut data)?;
 
-        let Cwt(cwt_arr) = serde_cbor::from_slice(&data)?;
+        let cwt = serde_cbor::from_slice(&data)?;
+
+        let Cwt(cwt_arr) = cwt;
 
         if cwt_arr.len() != 4 {
             return Err(Error::MalformedCWT);
         }
+
+        let protected_properties: RawHeader = match &cwt_arr[0] {
+            Value::Bytes(_bys) => serde_cbor::from_slice(&_bys)?,
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "protected properties".into(),
+                })
+            }
+        };
+
+        let _unprotected_properties = match &cwt_arr[1] {
+            Value::Map(map) => {
+                if !map.is_empty() {
+                    return Err(Error::InvalidFormatFor {
+                        key: "unprotected properties".into(),
+                    });
+                }
+            }
+            _ => {
+                return Err(Error::InvalidFormatFor {
+                    key: "unprotected properties".into(),
+                })
+            }
+        };
 
         let RawCert(mut cert_map) = match &cwt_arr[2] {
             Value::Bytes(bys) => serde_cbor::from_slice(bys)?,
@@ -549,30 +575,6 @@ impl TryFrom<&str> for HealthCert {
             .into_iter()
             .map(GreenPass::try_from)
             .collect::<Result<Vec<_>>>()?;
-
-        let protected_properties: RawHeader = match &cwt_arr[0] {
-            Value::Bytes(_bys) => serde_cbor::from_slice(&_bys)?,
-            _ => {
-                return Err(Error::InvalidFormatFor {
-                    key: "protected properties".into(),
-                })
-            }
-        };
-
-        let _unprotected_properties = match &cwt_arr[1] {
-            Value::Map(map) => {
-                if !map.is_empty() {
-                    return Err(Error::InvalidFormatFor {
-                        key: "unprotected properties".into(),
-                    });
-                }
-            }
-            _ => {
-                return Err(Error::InvalidFormatFor {
-                    key: "unprotected properties".into(),
-                })
-            }
-        };
 
         let signature = match &cwt_arr[3] {
             Value::Bytes(bys) => bys.clone(),
