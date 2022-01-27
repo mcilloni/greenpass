@@ -11,6 +11,9 @@ use flate2::read::ZlibDecoder;
 use serde_derive::Deserialize;
 use thiserror::Error;
 
+mod values;
+pub use values::*;
+
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Deserialize)]
@@ -299,16 +302,6 @@ impl TryFrom<BTreeMap<String, Value>> for Recovery {
     }
 }
 
-/// Identifies the recognized test types
-#[derive(Debug, PartialEq)]
-pub enum TestName {
-    /// A Nucleic Acid Amplification Test, with the name of the specific test
-    NAAT { name: String }, // nm
-
-    /// A Rapid Antigen Test, with a string identifying the device from the JRC database
-    RAT { device_id: String }, // ma
-}
-
 /// Attests that a test for a given disease has been conducted.
 #[derive(Debug, PartialEq)]
 pub struct Test {
@@ -593,7 +586,7 @@ impl TryFrom<&str> for HealthCert {
             Value::Bytes(bys) => bys,
             _ => return Err(Error::InvalidFormatFor { key: "KID".into() }),
         };
-        let algorithm : i128 = match protected_properties
+        let algorithm: i128 = match protected_properties
             .remove(&1isize)
             .ok_or_else(|| Error::MissingKey("algorithm".into()))?
         {
