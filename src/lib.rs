@@ -488,14 +488,8 @@ impl TryFrom<&str> for HealthCert {
             }
         };
 
-        let _unprotected_properties = match &cwt_arr[1] {
-            Value::Map(map) => {
-                if !map.is_empty() {
-                    return Err(Error::InvalidFormatFor {
-                        key: "unprotected properties".into(),
-                    });
-                }
-            }
+        let unprotected_properties = match &cwt_arr[1] {
+            Value::Map(map) => map,
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "unprotected properties".into(),
@@ -579,13 +573,31 @@ impl TryFrom<&str> for HealthCert {
         };
 
         let mut protected_properties = protected_properties.0;
-        let kid = match protected_properties
-            .remove(&4isize)
-            .ok_or_else(|| Error::MissingKey("KID".into()))?
-        {
-            Value::Bytes(bys) => bys,
-            _ => return Err(Error::InvalidFormatFor { key: "KID".into() }),
-        };
+        // The KID can be stored in the unprotected or the protected properties
+        // See https://ec.europa.eu/health/system/files/2021-04/digital-green-certificates_v3_en_0.pdf on page 7
+        // Try to get the KID from the unprotected properties
+        let kid = unprotected_properties
+            .iter()
+            .find(|&(key, _)| key == &Value::Integer(ciborium::value::Integer::from(4isize)))
+            .ok_or_else(|| Error::MissingKey("KID".into()))
+            .and_then(|kid| {
+                if let (_, Value::Bytes(bys)) = kid {
+                    Ok(bys.clone())
+                } else {
+                    Err(Error::InvalidFormatFor { key: "KID".into() })
+                }
+            });
+        // If the unprotected properties don't contain a KID, try with the protected properties
+        let kid = kid.or_else(|err| {
+            match protected_properties
+                .remove(&4isize)
+                .ok_or(Error::MissingKey("KID".into()))
+            {
+                Ok(Value::Bytes(bys)) => Ok(bys),
+                _ => Err(Error::InvalidFormatFor { key: "KID".into() }),
+            }
+        })?;
+
         let algorithm: i128 = match protected_properties
             .remove(&1isize)
             .ok_or_else(|| Error::MissingKey("algorithm".into()))?
