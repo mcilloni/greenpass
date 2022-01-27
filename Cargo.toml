@@ -14,10 +14,10 @@ exclude = ["fuzz/"]
 anyhow = "1.0.53"
 base45 = "3.0.0"
 chrono = "0.4.19"
+ciborium = "0.2.0"
 clap = { version = "3.0.13", features = ["derive"] }
 flate2 = "1.0.22"
 hex = "0.4.3"
 serde = "1.0.136"
-serde_cbor = "0.11.2"
 serde_derive = "1.0.136"
 thiserror = "1.0.30"

@@ -6,8 +6,8 @@ use std::{
 };
 
 use chrono::prelude::*;
+use ciborium::value::Value;
 use flate2::read::ZlibDecoder;
-use serde_cbor::Value;
 use serde_derive::Deserialize;
 use thiserror::Error;
 
@@ -55,7 +55,7 @@ pub enum Error {
     InvalidFormatFor { key: String },
 
     #[error("failed to parse a payload as CBOR")]
-    MalformedCBOR(#[from] serde_cbor::Error),
+    MalformedCBOR(#[from] ciborium::de::Error<std::io::Error>),
 
     #[error("the root structure for the certificate is malformed")]
     MalformedCWT,
@@ -89,7 +89,7 @@ macro_rules! gen_extract {
     ($name:ident, $variant:path, $for_type:ty) => {
         fn $name(m: &mut BTreeMap<String, Value>, k: &str) -> Result<$for_type> {
             extract_key(m, k).and_then(|v| match v {
-                $variant(r) => Ok(r),
+                $variant(r) => Ok(r.into()),
                 _ => Err(Error::InvalidFormatFor { key: k.into() }),
             })
         }
@@ -478,7 +478,7 @@ impl TryFrom<&str> for HealthCert {
         let mut data = Vec::new();
         dec.read_to_end(&mut data)?;
 
-        let cwt = serde_cbor::from_slice(&data)?;
+        let cwt = ciborium::de::from_reader(&data[..])?;
 
         let Cwt(cwt_arr) = cwt;
 
@@ -487,7 +487,7 @@ impl TryFrom<&str> for HealthCert {
         }
 
         let protected_properties: RawHeader = match &cwt_arr[0] {
-            Value::Bytes(_bys) => serde_cbor::from_slice(&_bys)?,
+            Value::Bytes(_bys) => ciborium::de::from_reader(&_bys[..])?,
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "protected properties".into(),
@@ -511,7 +511,7 @@ impl TryFrom<&str> for HealthCert {
         };
 
         let RawCert(mut cert_map) = match &cwt_arr[2] {
-            Value::Bytes(bys) => serde_cbor::from_slice(bys)?,
+            Value::Bytes(bys) => ciborium::de::from_reader(&bys[..])?,
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "root cert".into(),
@@ -533,10 +533,10 @@ impl TryFrom<&str> for HealthCert {
         };
 
         let expires = match cert_map
-            .remove(&4)
+            .remove(&4isize)
             .ok_or_else(|| Error::MissingKey("expiration timestamp".into()))?
         {
-            Value::Integer(ts) => Utc.timestamp(ts as i64, 0),
+            Value::Integer(ts) => Utc.timestamp(i128::from(ts) as i64, 0),
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "expiration timestamp".into(),
@@ -545,10 +545,10 @@ impl TryFrom<&str> for HealthCert {
         };
 
         let created = match cert_map
-            .remove(&6)
+            .remove(&6isize)
             .ok_or_else(|| Error::MissingKey("issue timestamp".into()))?
         {
-            Value::Integer(ts) => Utc.timestamp(ts as i64, 0),
+            Value::Integer(ts) => Utc.timestamp(i128::from(ts) as i64, 0),
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "issue timestamp".into(),
@@ -557,7 +557,7 @@ impl TryFrom<&str> for HealthCert {
         };
 
         let hcerts = match cert_map
-            .remove(&-260)
+            .remove(&-260isize)
             .ok_or_else(|| Error::MissingKey("hcert".into()))?
         {
             Value::Map(hcmap) => hcmap
@@ -587,17 +587,17 @@ impl TryFrom<&str> for HealthCert {
 
         let mut protected_properties = protected_properties.0;
         let kid = match protected_properties
-            .remove(&4)
+            .remove(&4isize)
             .ok_or_else(|| Error::MissingKey("KID".into()))?
         {
             Value::Bytes(bys) => bys,
             _ => return Err(Error::InvalidFormatFor { key: "KID".into() }),
         };
-        let algorithm = match protected_properties
-            .remove(&1)
+        let algorithm : i128 = match protected_properties
+            .remove(&1isize)
             .ok_or_else(|| Error::MissingKey("algorithm".into()))?
         {
-            Value::Integer(i) => i,
+            Value::Integer(i) => i.into(),
             _ => {
                 return Err(Error::InvalidFormatFor {
                     key: "algorithm".into(),
