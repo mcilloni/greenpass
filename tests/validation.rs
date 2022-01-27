@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-use greenpass::{CertInfo, GreenPass, HealthCert, Recovery, Test, TestName, Vaccine};
+use greenpass::{CertInfo, GreenPass, HealthCert, Recovery, Signature, Test, TestName, Vaccine};
 
 // Quick and dirty validation tests
 
@@ -31,6 +31,16 @@ fn parse_recovery() {
                 valid_until: NaiveDate::from_ymd(2021, 10, 04),
             })],
         }],
+        signature: Signature {
+            kid: vec![217, 25, 55, 95, 193, 231, 182, 178],
+            algorithm: -7i128,
+            signature: vec![
+                209, 100, 158, 183, 159, 208, 106, 164, 97, 164, 140, 184, 100, 84, 73, 247, 52,
+                136, 185, 139, 78, 154, 207, 178, 248, 215, 95, 172, 83, 202, 1, 39, 111, 254, 39,
+                212, 136, 60, 54, 144, 171, 14, 55, 241, 213, 9, 232, 132, 86, 223, 157, 37, 146,
+                235, 232, 94, 228, 57, 56, 11, 175, 15, 141, 229,
+            ],
+        },
     };
 
     assert_eq!(greenpass::parse(RECOVERY_SAMPLE_PAYLOAD).unwrap(), rec_hc);
@@ -63,6 +73,16 @@ fn parse_test_pcr() {
                 testing_centre: "Testing center Vienna 1".into(),
             })],
         }],
+        signature: Signature {
+            kid: vec![217, 25, 55, 95, 193, 231, 182, 178],
+            algorithm: -7i128,
+            signature: vec![
+                30, 197, 243, 131, 131, 7, 254, 58, 77, 84, 188, 63, 28, 198, 211, 148, 166, 29,
+                91, 207, 181, 181, 1, 249, 124, 210, 68, 36, 199, 6, 140, 98, 133, 126, 159, 7,
+                138, 79, 21, 151, 82, 210, 97, 150, 104, 182, 12, 24, 152, 214, 136, 110, 23, 75,
+                31, 33, 184, 58, 21, 60, 152, 84, 92, 62,
+            ],
+        },
     };
 
     assert_eq!(greenpass::parse(PCR_TEST_SAMPLE_PAYLOAD).unwrap(), pcr_hc);
@@ -95,6 +115,16 @@ fn parse_test_antigen() {
                 testing_centre: "Testing center Vienna 1".into(),
             })],
         }],
+        signature: Signature {
+            kid: vec![217, 25, 55, 95, 193, 231, 182, 178],
+            algorithm: -7i128,
+            signature: vec![
+                193, 252, 36, 214, 235, 99, 31, 183, 220, 20, 71, 57, 149, 206, 192, 104, 143, 126,
+                114, 136, 177, 151, 245, 38, 90, 83, 247, 183, 207, 113, 171, 228, 203, 152, 59,
+                84, 47, 48, 23, 27, 237, 140, 37, 142, 90, 18, 143, 254, 10, 87, 220, 200, 45, 222,
+                229, 140, 74, 159, 247, 188, 40, 129, 44, 209,
+            ],
+        },
     };
 
     assert_eq!(
@@ -129,6 +159,16 @@ fn parse_vaccination() {
                 prophylaxis_kind: "1119349007".into(),
             })],
         }],
+        signature: Signature {
+            kid: vec![217, 25, 55, 95, 193, 231, 182, 178],
+            algorithm: -7i128,
+            signature: vec![
+                69, 146, 203, 61, 178, 10, 23, 233, 18, 29, 183, 22, 5, 63, 6, 141, 66, 205, 176,
+                236, 63, 106, 217, 0, 79, 215, 218, 174, 181, 202, 83, 194, 246, 241, 147, 249, 82,
+                113, 129, 96, 123, 124, 210, 64, 179, 128, 25, 64, 173, 6, 78, 72, 231, 20, 86, 77,
+                99, 148, 85, 166, 136, 245, 61, 119,
+            ],
+        },
     };
 
     assert_eq!(greenpass::parse(VACCINE_SAMPLE_PAYLOAD).unwrap(), vac_hc);
