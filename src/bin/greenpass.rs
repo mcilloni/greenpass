@@ -5,15 +5,15 @@ use std::{
     process::exit,
 };
 
-use clap::{AppSettings, Clap};
+use clap::Parser;
+
 use greenpass::{CertInfo, GreenPass, HealthCert, Recovery, Test, TestName, Vaccine};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Utility to quickly inspect EU Digital Green Certificates. Does not support validation yet.
-#[derive(Clap)]
+#[derive(Debug, Parser)]
 #[clap(version = VERSION)]
-#[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
     /// File containing a Base45 QR code payload.
     /// Omit or specify `-` to read from stdin
