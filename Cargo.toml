@@ -1,6 +1,6 @@
 [package]
 name = "greenpass"
-author = ["Marco Cilloni <m.c.cilloni@gmail.com>"]
+authors = ["Marco Cilloni <m.c.cilloni@gmail.com>"]
 version = "0.1.0"
 description = "Rust crate to parse EU Digital Green Certificates for COVID-19"
 repository = "https://github.com/mcilloni/greenpass"
@@ -11,13 +11,13 @@ exclude = ["fuzz/"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.41"
+anyhow = "1.0.53"
 base45 = "3.0.0"
 chrono = "0.4.19"
-clap = "3.0.0-beta.2"
-flate2 = "1.0.20"
-hex = "0.4"
-serde = "1.0.126"
-serde_cbor = "0.11.1"
-serde_derive = "1.0.126"
-thiserror = "1.0.25"
+clap = { version = "3.0.13", features = ["derive"] }
+flate2 = "1.0.22"
+hex = "0.4.3"
+serde = "1.0.136"
+serde_cbor = "0.11.2"
+serde_derive = "1.0.136"
+thiserror = "1.0.30"
