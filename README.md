@@ -1,3 +1,4 @@
+[![Crate](https://img.shields.io/crates/v/greenpass.svg)](https://crates.io/crates/greenpass)
 [![dependency status](https://deps.rs/repo/github/mcilloni/greenpass/status.svg)](https://deps.rs/repo/github/mcilloni/greenpass)
 ![Build](https://github.com/mcilloni/greenpass/workflows/Build/badge.svg)
 
