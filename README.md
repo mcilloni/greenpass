@@ -1,4 +1,5 @@
 [![dependency status](https://deps.rs/repo/github/mcilloni/greenpass/status.svg)](https://deps.rs/repo/github/mcilloni/greenpass)
+![Build](https://github.com/mcilloni/greenpass/workflows/Build/badge.svg)
 
 # greenpass
 A Rust crate to parse EU Digital Green Certificates for COVID-19, with a simple utility to dump certificates with a well formatted output.
