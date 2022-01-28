@@ -1,11 +1,11 @@
 [package]
 name = "greenpass"
 authors = ["Marco Cilloni <m.c.cilloni@gmail.com>"]
-version = "0.1.1"
+version = "0.2.0"
 description = "Rust crate to parse EU Digital Green Certificates for COVID-19"
 repository = "https://github.com/mcilloni/greenpass"
 license = "MPL-2.0"
-edition = "2018"
+edition = "2021"
 exclude = ["fuzz/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
