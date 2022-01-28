@@ -10,7 +10,7 @@ Verification of cryptographic signatures is not implemented. Do not use this cod
 
 ## Usage
 This crate is able to load Base45-encoded DGC payloads. 
-It does not directly support barcode parsing, but can be uses alongside [ZBar](http://zbar.sourceforge.net/) to read Digital Green Certificates from images: 
+It does not directly support barcode parsing, but can be used alongside [ZBar](http://zbar.sourceforge.net/) to read Digital Green Certificates from images: 
 
 ```shell
 $ greenpass <(zbarimg -q pass.png | sed s/QR-Code://)
