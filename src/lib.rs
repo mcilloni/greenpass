@@ -587,8 +587,9 @@ impl TryFrom<&str> for HealthCert {
                     Err(Error::InvalidFormatFor { key: "KID".into() })
                 }
             });
+            
         // If the unprotected properties don't contain a KID, try with the protected properties
-        let kid = kid.or_else(|err| {
+        let kid = kid.or_else(|_| {
             match protected_properties
                 .remove(&4isize)
                 .ok_or(Error::MissingKey("KID".into()))
