@@ -12,6 +12,8 @@ Verification of cryptographic signatures is not implemented. Do not use this cod
 This crate is able to load Base45-encoded DGC payloads. 
 It does not directly support barcode parsing, but can be uses alongside [ZBar](http://zbar.sourceforge.net/) to read Digital Green Certificates from images: 
 
+Use the `--features=cli` switch to build the `greenpass` utility CLI executable:
+
 ```shell
 $ greenpass <(zbarimg -q pass.png | sed s/QR-Code://)
 EU Digital COVID Certificate
