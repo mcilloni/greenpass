@@ -22,6 +22,9 @@ serde = "1.0.136"
 serde_derive = "1.0.136"
 thiserror = "1.0.30"
 
+[features]
+cli = [ "clap" ]
+
 [[bin]]
 name = "greenpass"
 required-features = ["cli"]
